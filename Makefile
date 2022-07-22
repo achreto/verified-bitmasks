@@ -36,7 +36,7 @@ BITMASK += src/BitMask/BitmaskSeq.i.dfy
 BITMASK_LOGS=$(patsubst %.dfy,build/verify/%.log,$(BITMASK))
 
 DFY_VERIFY  = $(BITFIELDS) $(BITFIELDS_SPEC) $(BITMASK) $(BITMASK_SPEC)
-DFY_COMPILE = $(BITMASK)
+DFY_COMPILE = $(BITMASK) $(BITFIELDS)
 
 # verify the files
 verify: $(patsubst src/%.dfy,build/verify/%.log,$(DFY_VERIFY))
