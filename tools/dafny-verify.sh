@@ -41,6 +41,14 @@ TIMELIMIT=20
 
 # CPUS: set the number of CPU cores to be used for verification
 CPUS=${CPUS:-$DEFAULT_CPUS}
+VERBOSE=${VERBOSE:-0}
+PROC=${PROC:-"**"}
+
+TRACE=
+if [ "$VERBOSE" -eq 1 ]; then
+    TRACE="/trace"
+fi
+
 
 if [ ! -f ${DAFNY} ]; then
     echo "dafny not found, please run bash tools/install-dafny.sh first"
@@ -48,4 +56,4 @@ if [ ! -f ${DAFNY} ]; then
 fi
 
 # /induction:1 /noNLarith
-${DAFNY}  /compile:0 /noCheating:1 /vcsCores:${CPUS} /timeLimit:${TIMELIMIT} "$@"
+${DAFNY}  /compile:0 /noCheating:1 /vcsCores:${CPUS} /timeLimit:${TIMELIMIT} /proc:"${PROC}" ${TRACE} "$@"

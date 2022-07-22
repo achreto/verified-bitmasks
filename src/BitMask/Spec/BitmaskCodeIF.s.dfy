@@ -37,34 +37,54 @@ abstract module BitmaskCodeIF {
     // The implementation specification of the bitmask
     import S : BitmaskImplIF
 
+    //type T = object?
+
     /// Trait that defines the interface to the Bitmask class
     /// Implementing classes must extend this trait.
-    trait BitmaskCode {
+    trait BitmaskCode<T> {
+
+        /// the objec type of the bitmask data
+        ghost var ghost_data: object;
+
+        var data: T
+
         /// interpretation functions for the Bitmask Type and the number type
         function I() : (r: S.T)
             reads this
+            reads this.ghost_data
             requires Inv()
             ensures S.Inv(r)
 
-        function IR(r: uint64) : S.R
+        static function ValidSize(n: uint64) : (r : bool)
+            ensures r ==> S.ValidSize(n as nat)
 
         /// invariant, must implie the abstract invariant
         predicate Inv()
-
-
-        /// converts the type R to a nat
-        function ToNat(n: uint64) : nat
-            ensures ToNat(n) == S.ToNat(IR(n))
+            reads this
 
         ////////////////////////////////////////////////////////////////////////////////
         // Constructor Functions
         ////////////////////////////////////////////////////////////////////////////////
 
-        // method bitmask_new_zeros(N: uint64) returns (r: BitmaskCode)
-        //     ensures r.Inv()
+        static method NewZeros(n: uint64) returns (r: BitmaskCode)
+            requires ValidSize(n)
+            ensures r.Inv()
+            ensures fresh(r)
+            ensures r.I() == S.bitmask_new_zeros(n as nat)
 
-        // method bitmask_new_ones(N: uint64) returns (r: BitmaskCode)
+        static method NewOnes(n: uint64) returns (r: BitmaskCode)
+            requires ValidSize(n)
+            ensures r.Inv()
+            ensures fresh(r)
+            ensures r.I() == S.bitmask_new_ones(n as nat)
 
+
+        ////////////////////////////////////////////////////////////////////////////////
+        // Accecssors
+        ////////////////////////////////////////////////////////////////////////////////
+
+        // function method get_data() : T
+        //     reads this
 
         ////////////////////////////////////////////////////////////////////////////////
         // Bit Counts
@@ -72,12 +92,13 @@ abstract module BitmaskCodeIF {
 
         function method nbits() : (r: uint64)
             requires this.Inv()
-            ensures IR(r) == S.bitmask_nbits(this.I())
+            reads this
+            ensures r as nat == S.bitmask_nbits(this.I())
 
         method popcnt() returns (r: uint64)
             requires this.Inv()
-            ensures ToNat(r) <= ToNat(this.nbits())
-            ensures IR(r) == S.bitmask_popcnt(this.I())
+            ensures r <= this.nbits()
+            ensures r as nat == S.bitmask_popcnt(this.I())
 
         ////////////////////////////////////////////////////////////////////////////////
         // Bitwise Get/Set Operations
@@ -85,79 +106,89 @@ abstract module BitmaskCodeIF {
 
         method get_bit(i: uint64) returns (r: bool)
             requires this.Inv()
-            requires ToNat(i) < ToNat(this.nbits())
-            ensures r == S.bitmask_get_bit(this.I(), IR(i))
+            requires i< this.nbits()
+            ensures r == S.bitmask_get_bit(this.I(), i as nat)
 
         method set_bit(i: uint64)
             requires this.Inv()
-            requires ToNat(i) < ToNat(this.nbits())
-            modifies this
+            requires i< this.nbits()
+            modifies this.ghost_data
             ensures this.Inv()
-            ensures this.nbits() == old(this).nbits()
-            ensures this.I() == S.bitmask_set_bit(old(this).I(), IR(i))
+            ensures this.nbits() == old(this.nbits())
+            ensures i < this.nbits()
+            ensures this.I() == S.bitmask_set_bit(old(this.I()), i as nat)
 
         method clear_bit(i: uint64)
             requires this.Inv()
-            requires ToNat(i) < ToNat(this.nbits())
-            modifies this
+            requires i< this.nbits()
+            modifies this.ghost_data
             ensures this.Inv()
-            ensures this.nbits() == old(this).nbits()
-            ensures this.I() == S.bitmask_clear_bit(old(this).I(), IR(i))
+            ensures this.nbits() == old(this.nbits())
+            ensures this.I() == S.bitmask_clear_bit(old(this.I()), i as nat)
 
         method toggle_bit(i: uint64)
             requires this.Inv()
-            requires ToNat(i) < ToNat(this.nbits())
-            modifies this
+            requires i < this.nbits()
+            modifies this.ghost_data
             ensures this.Inv()
-            ensures this.nbits() == old(this).nbits()
-            ensures this.I() == S.bitmask_toggle_bit(old(this).I(), IR(i))
+            ensures this.nbits() == old(this.nbits())
+            ensures this.I() == S.bitmask_toggle_bit(old(this.I()), i as nat)
 
         ////////////////////////////////////////////////////////////////////////////////
         // Bitmask Predicates
         ////////////////////////////////////////////////////////////////////////////////
 
-        predicate method eq(other: BitmaskCode)
+        method eq(other: BitmaskCode<T>) returns (r: bool)
             requires this.Inv() && other.Inv()
-            ensures this.eq(other) <==> S.bitmask_eq(this.I(), other.I())
+            ensures r <==> S.bitmask_eq(this.I(), other.I())
 
-        predicate method is_zeros()
+        method is_zeros() returns (r: bool)
             requires this.Inv()
-            ensures this.is_zeros() <==> S.bitmask_is_zeros(this.I())
+            ensures r == S.bitmask_is_zeros(this.I())
 
-        predicate method is_ones()
+        method is_ones() returns (r: bool)
             requires this.Inv()
-            ensures this.is_ones() <==> S.bitmask_is_ones(this.I())
+            ensures r == S.bitmask_is_ones(this.I())
 
         ////////////////////////////////////////////////////////////////////////////////
         // Bitmask Operations
         ////////////////////////////////////////////////////////////////////////////////
 
-        method and(other: BitmaskCode)
+        method and(other: BitmaskCode<T>)
             requires this.Inv() && other.Inv()
             requires this.nbits() == other.nbits()
+            requires this.ghost_data != other.ghost_data
+            modifies this.ghost_data
             ensures this.Inv()
+            ensures unchanged(other) && unchanged(other.ghost_data)
             ensures this.nbits() == old(this).nbits()
-            ensures this.I() == S.bitmask_not(old(this).I())
+            ensures this.I() == S.bitmask_and(old(this.I()), other.I())
 
-        method or(other: BitmaskCode)
+        method or(other: BitmaskCode<T>)
             requires this.Inv() && other.Inv()
             requires this.nbits() == other.nbits()
+            requires this.ghost_data != other.ghost_data
+            modifies this.ghost_data
             ensures this.Inv()
+            ensures unchanged(other) && unchanged(other.ghost_data)
             ensures this.nbits() == old(this).nbits()
-            ensures this.I() == S.bitmask_not(old(this).I())
+            ensures this.I() == S.bitmask_or(old(this.I()), other.I())
 
-
-        method xor(other: BitmaskCode)
+        method xor(other: BitmaskCode<T>)
             requires this.Inv() && other.Inv()
             requires this.nbits() == other.nbits()
+            requires this.ghost_data != other.ghost_data
+            modifies this.ghost_data
             ensures this.Inv()
+            ensures unchanged(other) && unchanged(other.ghost_data)
             ensures this.nbits() == old(this).nbits()
-            ensures this.I() == S.bitmask_not(old(this).I())
+            ensures this.I() == S.bitmask_xor(old(this.I()), other.I())
 
         method not()
             requires this.Inv()
+            modifies this.ghost_data
             ensures this.Inv()
             ensures this.nbits() == old(this).nbits()
-            ensures this.I() == S.bitmask_not(old(this).I())
+            ensures this.I() == S.bitmask_not(old(this.I()))
     }
 }
