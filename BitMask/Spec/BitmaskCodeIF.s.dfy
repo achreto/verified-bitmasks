@@ -24,7 +24,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-include "MachineTypes.s.dfy"
+include "../../BitFields/Spec/MachineTypes.s.dfy"
 include "BitmaskImplIF.s.dfy"
 
 /// Abstract representing implementing code

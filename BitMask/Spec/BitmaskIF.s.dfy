@@ -1,3 +1,4 @@
+
 /*
  * MIT License
  *
@@ -24,147 +25,155 @@
  * SPDX-License-Identifier: MIT
  */
 
-include "MachineTypes.s.dfy"
-include "BitmaskIF.s.dfy"
-
-/// Abstract module for the other implementing bitmask modules
+/// Bitmask Interface Moddule
 ///
-/// All modules other than `BitmaskSpec` should refine this module.
-/// The module defines the interfaces as well as refinement structure
-/// of the bitmask implemention.
-abstract module BitmaskImplIF refines BitmaskIF {
+/// This abstract module provides the interface to manipulate bitmasks.
+/// Other bitmask implementation modules should ultimately refine this
+/// abstract module. However, this refinement should not be done directly
+/// other than in the BitmaskSpec module. Any other module should refine
+/// BitmaskImplIF (that in turn refines BitmaskIF).
+abstract module BitmaskIF {
 
     ////////////////////////////////////////////////////////////////////////////////
     // Types Definitions
     ////////////////////////////////////////////////////////////////////////////////
 
-    /// The specification of the bitmask. This is the higher-level module
-    /// that this module refines.
-    import S : BitmaskIF
-
     /// declares the type for the bitmask
     type T
-    /// declares the type for numbers
-    type R(==)
 
-    /// interpretation functions for the Bitmask Type and the number type
-    function IT(A: T) : (r: S.T)
-        requires Inv(A)
-        ensures S.Inv(r)
-
-    function IR(r: R) : S.R
-
-    /// invariant, must implie the abstract invariant
+    /// Invariant over the bitmask type T
     predicate Inv(A: T)
 
-    /// whether or not the size parameter is valid
-    predicate ValidSize(n: R)
-        ensures  ValidSize(n) ==> S.ValidSize(IR(n))
+    /// predicate whether the size `n` is supported by the bitmask type T
+    predicate ValidSize(n: nat)
 
-    /// converts the type R to a nat
-    function ToNat(n: R) : nat
-        ensures ToNat(n) == S.ToNat(IR(n))
+    /// Predicate whether the bit `i` is valid for the bitmask `A`
+    predicate ValidBit(A: T, i: nat)
 
+    /// converts the bitmask type to a sequence of booleans
     function ToBitSeq(A: T) : seq<bool>
 
     ////////////////////////////////////////////////////////////////////////////////
     // Constructor Functions
     ////////////////////////////////////////////////////////////////////////////////
 
-    function bitmask_new_zeros(M: R) : (r: T)
+
+    function bitmask_new_zeros(M: nat) : (r: T)
+        requires ValidSize(M)
         ensures Inv(r)
         ensures M == bitmask_nbits(r)
         ensures bitmask_is_zeros(r)
-        ensures IT(r) == S.bitmask_new_zeros(IR(M))
 
-    function bitmask_new_ones(M: R) : (r: T)
+    function bitmask_new_ones(M: nat) : (r: T)
+        requires ValidSize(M)
         ensures Inv(r)
         ensures M == bitmask_nbits(r)
         ensures bitmask_is_ones(r)
-        ensures IT(r) == S.bitmask_new_ones(IR(M))
+
+    // some concatenation function
+    function bitmask_concat(A: T, B: T) : (r: T)
+        requires Inv(A) && Inv(B)
+        ensures Inv(r)
+        ensures bitmask_nbits(r) == bitmask_nbits(A) + bitmask_nbits(B)
+        ensures ToBitSeq(r) == ToBitSeq(A) + ToBitSeq(B)
+
+    function bitmask_split(A: T, i: nat) : (r:(T, T))
+        requires Inv(A)
+        requires i <= bitmask_nbits(A)
+        ensures Inv(r.0) && Inv(r.1 )
+        ensures ToBitSeq(A) == ToBitSeq(r.0) + ToBitSeq(r.1)
+
+    lemma lemma_bitmask_split_concat(A: T, B: T, i: nat)
+        requires Inv(A) && Inv(B)
+        ensures A == bitmask_split(bitmask_concat(A, B), bitmask_nbits(A)).0
+        ensures B == bitmask_split(bitmask_concat(A, B), bitmask_nbits(A)).1
+
 
     ////////////////////////////////////////////////////////////////////////////////
-    // Bit Counts
+    // Size
     ////////////////////////////////////////////////////////////////////////////////
 
-    function bitmask_nbits(A: T) : (r: R)
-        // requires Inv(A)
-        ensures IR(r) == S.bitmask_nbits(IT(A))
 
-    function bitmask_popcnt(A: T) : (r: R)
-        //requires Inv(A)
-        ensures ToNat(r) <= ToNat(bitmask_nbits(A))
-        ensures IR(r) == S.bitmask_popcnt(IT(A))
+    function bitmask_nbits(A: T) : (r: nat)
+        requires Inv(A)
+
+    function bitmask_popcnt(A: T) : (r: nat)
+        requires Inv(A)
+        ensures r <= bitmask_nbits(A)
+
 
     ////////////////////////////////////////////////////////////////////////////////
     // Bitwise Get/Set Operations
     ////////////////////////////////////////////////////////////////////////////////
 
-    function bitmask_get_bit(A: T, i: R) : (r: bool)
-        // requires Inv(A)
-        // requires ToNat(i) < ToNat(bitmask_nbits(A))
-        ensures r == S.bitmask_get_bit(IT(A), IR(i));
 
-    function bitmask_set_bit(A: T, i: R) : (r: T)
-        // requires Inv(A)
-        // requires ToNat(i) < ToNat(bitmask_nbits(A))
-        ensures IT(r) == S.bitmask_set_bit(IT(A), IR(i));
+    function bitmask_get_bit(A: T, i: nat) : (r: bool)
+        requires Inv(A)
+        requires i < bitmask_nbits(A)
 
-    function bitmask_clear_bit(A: T, i: R) : (r: T)
-        // requires Inv(A)
-        // requires ToNat(i) < ToNat(bitmask_nbits(A))
-        ensures IT(r) == S.bitmask_clear_bit(IT(A), IR(i));
+    function bitmask_set_bit(A: T, i: nat) : (r: T)
+        requires Inv(A)
+        requires i < bitmask_nbits(A)
+        ensures Inv(r)
+        ensures bitmask_nbits(r) == bitmask_nbits(A)
+        ensures bitmask_get_bit(r, i)
 
-    function bitmask_toggle_bit(A: T, i: R) : (r: T)
-        // requires Inv(A)
-        // requires ToNat(i) < ToNat(bitmask_nbits(A))
-        ensures IT(r) == S.bitmask_toggle_bit(IT(A), IR(i));
+    function bitmask_clear_bit(A: T, i: nat) : (r: T)
+        requires Inv(A)
+        requires i < bitmask_nbits(A)
+        ensures Inv(r)
+        ensures bitmask_nbits(r) == bitmask_nbits(A)
+        ensures !bitmask_get_bit(r, i)
+
+    function bitmask_toggle_bit(A: T, i: nat) : (r: T)
+        requires Inv(A)
+        requires i < bitmask_nbits(A)
+        ensures Inv(r)
+        ensures bitmask_nbits(r) == bitmask_nbits(A)
+        ensures bitmask_get_bit(r, i) == !bitmask_get_bit(A, i)
+
 
     ////////////////////////////////////////////////////////////////////////////////
     // Bitmask Predicates
     ////////////////////////////////////////////////////////////////////////////////
 
+
     predicate bitmask_eq(A: T, B: T)
-        // requires Inv(A) && Inv(B)
+        requires Inv(A) && Inv(B)
         ensures bitmask_eq(A, B) <==> A == B
-        ensures bitmask_eq(A, B) <==> S.bitmask_eq(IT(A), IT(B))
 
     predicate bitmask_is_zeros(A: T)
-        // requires Inv(A)
-        ensures bitmask_is_zeros(A) <==> S.bitmask_is_zeros(IT(A))
+        requires Inv(A)
 
     predicate bitmask_is_ones(A: T)
-        // requires Inv(A)
-        ensures bitmask_is_ones(A) <==> S.bitmask_is_ones(IT(A))
+        requires Inv(A)
+
 
     ////////////////////////////////////////////////////////////////////////////////
     // Bitmask Operations
     ////////////////////////////////////////////////////////////////////////////////
 
+
     function bitmask_and(A: T, B: T) : (r: T)
-        // requires Inv(A) && Inv(B)
-        // requires bitmask_nbits(A) == bitmask_nbits(B)
+        requires Inv(A) && Inv(B)
+        requires bitmask_nbits(A) == bitmask_nbits(B)
         ensures Inv(r)
         ensures bitmask_nbits(r) == bitmask_nbits(A)
-        ensures IT(r) == S.bitmask_and(IT(A), IT(B))
 
     function bitmask_or(A: T, B: T) : (r: T)
-        // requires Inv(A) && Inv(B)
-        // requires bitmask_nbits(A) == bitmask_nbits(B)
+        requires Inv(A) && Inv(B)
+        requires bitmask_nbits(A) == bitmask_nbits(B)
         ensures Inv(r)
         ensures bitmask_nbits(r) == bitmask_nbits(A)
-        ensures IT(r) == S.bitmask_or(IT(A), IT(B))
 
     function bitmask_xor(A: T, B: T) : (r: T)
-        // requires Inv(A) && Inv(B)
-        // requires bitmask_nbits(A) == bitmask_nbits(B)
+        requires Inv(A) && Inv(B)
+        requires bitmask_nbits(A) == bitmask_nbits(B)
         ensures Inv(r)
         ensures bitmask_nbits(r) == bitmask_nbits(A)
-        ensures IT(r) == S.bitmask_xor(IT(A), IT(B))
 
     function bitmask_not(A: T) : (r: T)
-        // requires Inv(A)
+        requires Inv(A)
         ensures Inv(r)
         ensures bitmask_nbits(r) == bitmask_nbits(A)
-        ensures IT(r) == S.bitmask_not(IT(A))
 }

@@ -24,7 +24,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-include "MachineTypes.s.dfy"
 include "BitmaskIF.s.dfy"
 
 
@@ -46,17 +45,20 @@ module BitmaskSpec refines BitmaskIF {
     /// The type of the bitmask.
     /// Here we just use a sequence of booleans representing the bitmask's bits.
     type T = seq<bool>
-    /// declares the type for numbers
-    type R(==) = nat
 
     /// converts the type R to a nat
-    function ToNat(n: R) : nat { n }
+    function ToNat(n: nat) : nat { n }
 
     /// the invariant
     predicate Inv(A: T) { true }
 
     /// whether the number of bits is supported
-    predicate ValidSize(n: R) { true }
+    predicate ValidSize(n: nat) { true }
+
+    /// converts the bitmask type to a sequence of booleans
+    function ToBitSeq(A: T) : seq<bool> {
+        A
+    }
 
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -64,7 +66,7 @@ module BitmaskSpec refines BitmaskIF {
     ////////////////////////////////////////////////////////////////////////////////
 
 
-    function {:opaque} bitmask_new_zeros(M: R) : (r: T)
+    function {:opaque} bitmask_new_zeros(M: nat) : (r: T)
         // requires ValidSize(M)
         ensures Inv(r)
         ensures M == bitmask_nbits(r)
@@ -74,7 +76,7 @@ module BitmaskSpec refines BitmaskIF {
         seq(M, i => false)
     }
 
-    function {:opaque} bitmask_new_ones(M: R) : (r: T)
+    function {:opaque} bitmask_new_ones(M: nat) : (r: T)
         // requires ValidSize(M)
         ensures Inv(r)
         ensures M == bitmask_nbits(r)
@@ -91,13 +93,13 @@ module BitmaskSpec refines BitmaskIF {
     ////////////////////////////////////////////////////////////////////////////////
 
 
-    function bitmask_nbits(A: T) : (r: R)
+    function bitmask_nbits(A: T) : (r: nat)
         // requires Inv(A)
     {
         |A|
     }
 
-    function {:opaque} bitmask_popcnt(A: T) : (r: R)
+    function {:opaque} bitmask_popcnt(A: T) : (r: nat)
         // requires Inv(A)
     {
         if |A| == 0 then 0
@@ -123,28 +125,28 @@ module BitmaskSpec refines BitmaskIF {
     ////////////////////////////////////////////////////////////////////////////////
 
 
-    function bitmask_get_bit(A: T, i: R) : (r: bool)
+    function bitmask_get_bit(A: T, i: nat) : (r: bool)
         // requires Inv(A)
         // requires ToNat(i) < ToNat(bitmask_nbits(A))
     {
         A[i]
     }
 
-    function bitmask_set_bit(A: T, i: R) : (r: T)
+    function bitmask_set_bit(A: T, i: nat) : (r: T)
         // requires Inv(A)
         // requires ToNat(i) < ToNat(bitmask_nbits(A))
     {
         A[i := true]
     }
 
-    function bitmask_clear_bit(A: T, i: R) : (r: T)
+    function bitmask_clear_bit(A: T, i: nat) : (r: T)
         // requires Inv(A)
         // requires ToNat(i) < ToNat(bitmask_nbits(A))
     {
         A[i := false]
     }
 
-    function bitmask_toggle_bit(A: T, i: R) : (r: T)
+    function bitmask_toggle_bit(A: T, i: nat) : (r: T)
         // requires Inv(A)
         // requires ToNat(i) < ToNat(bitmask_nbits(A))
     {
