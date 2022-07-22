@@ -26,18 +26,24 @@
 
 module MachineTypes {
 
-    // Size limits for the unsigned integer machine types
-    const UINT64_MAX := 0xffff_ffff_ffff_ffff
-    const UINT32_MAX := 0xffff_ffff
-    const UINT16_MAX := 0xffff
-    const UINT8_MAX  := 0xff
-
     /// native types for unsigned integers
-    newtype{:nativeType "ulong"}  uint64 = i:nat | 0 <= i <= UINT64_MAX
-    newtype{:nativeType "uint"}   uint32 = i:nat | 0 <= i <= UINT32_MAX
-    newtype{:nativeType "ushort"} uint16 = i:nat | 0 <= i <= UINT16_MAX
-    newtype{:nativeType "byte"}   uint8  = i:nat | 0 <= i <= UINT8_MAX
+    newtype{:nativeType "ulong"}  uint64 = i:nat | 0 <= i <= 0xffff_ffff_ffff_ffff
+    newtype{:nativeType "uint"}   uint32 = i:nat | 0 <= i <= 0xffff_ffff
+    newtype{:nativeType "ushort"} uint16 = i:nat | 0 <= i <= 0xffff
+    newtype{:nativeType "byte"}   uint8  = i:nat | 0 <= i <= 0xff
+
+
+    // Size limits for the unsigned integer machine types
+    // const UINT64_MAX := 0xffff_ffff_ffff_ffff
+    // const UINT32_MAX := 0xffff_ffff
+    // const UINT16_MAX := 0xffff
+    // const UINT8_MAX  := 0xff
+
+    function UINT64_MAX() : nat { 0xffff_ffff_ffff_ffff }
+    function UINT32_MAX() : nat { 0xffff_ffff }
+    function UINT16_MAX() : nat { 0xffff }
+    function UINT8_MAX()  : nat { 0xff }
 
     // the word size
-    const WORD_SIZE := 64
+    function WORD_SIZE() : nat { 64 }
 }

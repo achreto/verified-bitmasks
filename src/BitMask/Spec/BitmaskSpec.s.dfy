@@ -55,6 +55,11 @@ module BitmaskSpec refines BitmaskIF {
     /// whether the number of bits is supported
     predicate ValidSize(n: nat) { true }
 
+    /// Predicate whether the bit `i` is valid for the bitmask `A`
+    predicate ValidBit(A: T, i: nat) {
+        i < |A|
+    }
+
     /// converts the bitmask type to a sequence of booleans
     function ToBitSeq(A: T) : seq<bool> {
         A
@@ -85,6 +90,33 @@ module BitmaskSpec refines BitmaskIF {
     {
         reveal_bitmask_is_ones();
         seq(M, i => true)
+    }
+
+    // some concatenation function
+    function bitmask_concat(A: T, B: T) : (r: T)
+        // requires Inv(A) && Inv(B)
+        ensures Inv(r)
+        ensures bitmask_nbits(r) == bitmask_nbits(A) + bitmask_nbits(B)
+        ensures ToBitSeq(r) == ToBitSeq(A) + ToBitSeq(B)
+    {
+        A + B
+    }
+
+    function bitmask_split(A: T, i: nat) : (r:(T, T))
+        // requires Inv(A)
+        // requires i <= bitmask_nbits(A)
+        ensures Inv(r.0) && Inv(r.1 )
+        ensures ToBitSeq(A) == ToBitSeq(r.0) + ToBitSeq(r.1)
+    {
+        (A[..i], A[i..])
+    }
+
+    lemma lemma_bitmask_split_concat(A: T, B: T, i: nat)
+        // requires Inv(A) && Inv(B)
+        ensures A == bitmask_split(bitmask_concat(A, B), bitmask_nbits(A)).0
+        ensures B == bitmask_split(bitmask_concat(A, B), bitmask_nbits(A)).1
+    {
+
     }
 
 

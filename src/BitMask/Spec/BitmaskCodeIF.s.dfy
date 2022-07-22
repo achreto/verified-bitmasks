@@ -39,156 +39,156 @@ abstract module BitmaskCodeIF {
 
     //type T = object?
 
-    /// Trait that defines the interface to the Bitmask class
-    /// Implementing classes must extend this trait.
-    trait BitmaskCode<T> {
+    // /// Trait that defines the interface to the Bitmask class
+    // /// Implementing classes must extend this trait.
+    // trait BitmaskCode<T> {
 
-        /// the objec type of the bitmask data
-        ghost var ghost_data: object;
+    //     /// the objec type of the bitmask data
+    //     ghost var ghost_data: object;
 
-        var data: T
+    //     var data: T
 
-        /// interpretation functions for the Bitmask Type and the number type
-        function I() : (r: S.T)
-            reads this
-            reads this.ghost_data
-            requires Inv()
-            ensures S.Inv(r)
+    //     /// interpretation functions for the Bitmask Type and the number type
+    //     function I() : (r: S.T)
+    //         reads this
+    //         reads this.ghost_data
+    //         requires Inv()
+    //         ensures S.Inv(r)
 
-        static function ValidSize(n: uint64) : (r : bool)
-            ensures r ==> S.ValidSize(n as nat)
+    //     static function ValidSize(n: uint64) : (r : bool)
+    //         ensures r ==> S.ValidSize(n as nat)
 
-        /// invariant, must implie the abstract invariant
-        predicate Inv()
-            reads this
+    //     /// invariant, must implie the abstract invariant
+    //     predicate Inv()
+    //         reads this
 
-        ////////////////////////////////////////////////////////////////////////////////
-        // Constructor Functions
-        ////////////////////////////////////////////////////////////////////////////////
+    //     ////////////////////////////////////////////////////////////////////////////////
+    //     // Constructor Functions
+    //     ////////////////////////////////////////////////////////////////////////////////
 
-        static method NewZeros(n: uint64) returns (r: BitmaskCode)
-            requires ValidSize(n)
-            ensures r.Inv()
-            ensures fresh(r)
-            ensures r.I() == S.bitmask_new_zeros(n as nat)
+    //     static method NewZeros(n: uint64) returns (r: BitmaskCode)
+    //         requires ValidSize(n)
+    //         ensures r.Inv()
+    //         ensures fresh(r)
+    //         ensures r.I() == S.bitmask_new_zeros(n as nat)
 
-        static method NewOnes(n: uint64) returns (r: BitmaskCode)
-            requires ValidSize(n)
-            ensures r.Inv()
-            ensures fresh(r)
-            ensures r.I() == S.bitmask_new_ones(n as nat)
+    //     static method NewOnes(n: uint64) returns (r: BitmaskCode)
+    //         requires ValidSize(n)
+    //         ensures r.Inv()
+    //         ensures fresh(r)
+    //         ensures r.I() == S.bitmask_new_ones(n as nat)
 
 
-        ////////////////////////////////////////////////////////////////////////////////
-        // Accecssors
-        ////////////////////////////////////////////////////////////////////////////////
+    //     ////////////////////////////////////////////////////////////////////////////////
+    //     // Accecssors
+    //     ////////////////////////////////////////////////////////////////////////////////
 
-        // function method get_data() : T
-        //     reads this
+    //     // function method get_data() : T
+    //     //     reads this
 
-        ////////////////////////////////////////////////////////////////////////////////
-        // Bit Counts
-        ////////////////////////////////////////////////////////////////////////////////
+    //     ////////////////////////////////////////////////////////////////////////////////
+    //     // Bit Counts
+    //     ////////////////////////////////////////////////////////////////////////////////
 
-        function method nbits() : (r: uint64)
-            requires this.Inv()
-            reads this
-            ensures r as nat == S.bitmask_nbits(this.I())
+    //     function method nbits() : (r: uint64)
+    //         requires this.Inv()
+    //         reads this
+    //         ensures r as nat == S.bitmask_nbits(this.I())
 
-        method popcnt() returns (r: uint64)
-            requires this.Inv()
-            ensures r <= this.nbits()
-            ensures r as nat == S.bitmask_popcnt(this.I())
+    //     method popcnt() returns (r: uint64)
+    //         requires this.Inv()
+    //         ensures r <= this.nbits()
+    //         ensures r as nat == S.bitmask_popcnt(this.I())
 
-        ////////////////////////////////////////////////////////////////////////////////
-        // Bitwise Get/Set Operations
-        ////////////////////////////////////////////////////////////////////////////////
+    //     ////////////////////////////////////////////////////////////////////////////////
+    //     // Bitwise Get/Set Operations
+    //     ////////////////////////////////////////////////////////////////////////////////
 
-        method get_bit(i: uint64) returns (r: bool)
-            requires this.Inv()
-            requires i< this.nbits()
-            ensures r == S.bitmask_get_bit(this.I(), i as nat)
+    //     method get_bit(i: uint64) returns (r: bool)
+    //         requires this.Inv()
+    //         requires i< this.nbits()
+    //         ensures r == S.bitmask_get_bit(this.I(), i as nat)
 
-        method set_bit(i: uint64)
-            requires this.Inv()
-            requires i< this.nbits()
-            modifies this.ghost_data
-            ensures this.Inv()
-            ensures this.nbits() == old(this.nbits())
-            ensures i < this.nbits()
-            ensures this.I() == S.bitmask_set_bit(old(this.I()), i as nat)
+    //     method set_bit(i: uint64)
+    //         requires this.Inv()
+    //         requires i< this.nbits()
+    //         modifies this.ghost_data
+    //         ensures this.Inv()
+    //         ensures this.nbits() == old(this.nbits())
+    //         ensures i < this.nbits()
+    //         ensures this.I() == S.bitmask_set_bit(old(this.I()), i as nat)
 
-        method clear_bit(i: uint64)
-            requires this.Inv()
-            requires i< this.nbits()
-            modifies this.ghost_data
-            ensures this.Inv()
-            ensures this.nbits() == old(this.nbits())
-            ensures this.I() == S.bitmask_clear_bit(old(this.I()), i as nat)
+    //     method clear_bit(i: uint64)
+    //         requires this.Inv()
+    //         requires i< this.nbits()
+    //         modifies this.ghost_data
+    //         ensures this.Inv()
+    //         ensures this.nbits() == old(this.nbits())
+    //         ensures this.I() == S.bitmask_clear_bit(old(this.I()), i as nat)
 
-        method toggle_bit(i: uint64)
-            requires this.Inv()
-            requires i < this.nbits()
-            modifies this.ghost_data
-            ensures this.Inv()
-            ensures this.nbits() == old(this.nbits())
-            ensures this.I() == S.bitmask_toggle_bit(old(this.I()), i as nat)
+    //     method toggle_bit(i: uint64)
+    //         requires this.Inv()
+    //         requires i < this.nbits()
+    //         modifies this.ghost_data
+    //         ensures this.Inv()
+    //         ensures this.nbits() == old(this.nbits())
+    //         ensures this.I() == S.bitmask_toggle_bit(old(this.I()), i as nat)
 
-        ////////////////////////////////////////////////////////////////////////////////
-        // Bitmask Predicates
-        ////////////////////////////////////////////////////////////////////////////////
+    //     ////////////////////////////////////////////////////////////////////////////////
+    //     // Bitmask Predicates
+    //     ////////////////////////////////////////////////////////////////////////////////
 
-        method eq(other: BitmaskCode<T>) returns (r: bool)
-            requires this.Inv() && other.Inv()
-            ensures r <==> S.bitmask_eq(this.I(), other.I())
+    //     method eq(other: BitmaskCode<T>) returns (r: bool)
+    //         requires this.Inv() && other.Inv()
+    //         ensures r <==> S.bitmask_eq(this.I(), other.I())
 
-        method is_zeros() returns (r: bool)
-            requires this.Inv()
-            ensures r == S.bitmask_is_zeros(this.I())
+    //     method is_zeros() returns (r: bool)
+    //         requires this.Inv()
+    //         ensures r == S.bitmask_is_zeros(this.I())
 
-        method is_ones() returns (r: bool)
-            requires this.Inv()
-            ensures r == S.bitmask_is_ones(this.I())
+    //     method is_ones() returns (r: bool)
+    //         requires this.Inv()
+    //         ensures r == S.bitmask_is_ones(this.I())
 
-        ////////////////////////////////////////////////////////////////////////////////
-        // Bitmask Operations
-        ////////////////////////////////////////////////////////////////////////////////
+    //     ////////////////////////////////////////////////////////////////////////////////
+    //     // Bitmask Operations
+    //     ////////////////////////////////////////////////////////////////////////////////
 
-        method and(other: BitmaskCode<T>)
-            requires this.Inv() && other.Inv()
-            requires this.nbits() == other.nbits()
-            requires this.ghost_data != other.ghost_data
-            modifies this.ghost_data
-            ensures this.Inv()
-            ensures unchanged(other) && unchanged(other.ghost_data)
-            ensures this.nbits() == old(this).nbits()
-            ensures this.I() == S.bitmask_and(old(this.I()), other.I())
+    //     method and(other: BitmaskCode<T>)
+    //         requires this.Inv() && other.Inv()
+    //         requires this.nbits() == other.nbits()
+    //         requires this.ghost_data != other.ghost_data
+    //         modifies this.ghost_data
+    //         ensures this.Inv()
+    //         ensures unchanged(other) && unchanged(other.ghost_data)
+    //         ensures this.nbits() == old(this).nbits()
+    //         ensures this.I() == S.bitmask_and(old(this.I()), other.I())
 
-        method or(other: BitmaskCode<T>)
-            requires this.Inv() && other.Inv()
-            requires this.nbits() == other.nbits()
-            requires this.ghost_data != other.ghost_data
-            modifies this.ghost_data
-            ensures this.Inv()
-            ensures unchanged(other) && unchanged(other.ghost_data)
-            ensures this.nbits() == old(this).nbits()
-            ensures this.I() == S.bitmask_or(old(this.I()), other.I())
+    //     method or(other: BitmaskCode<T>)
+    //         requires this.Inv() && other.Inv()
+    //         requires this.nbits() == other.nbits()
+    //         requires this.ghost_data != other.ghost_data
+    //         modifies this.ghost_data
+    //         ensures this.Inv()
+    //         ensures unchanged(other) && unchanged(other.ghost_data)
+    //         ensures this.nbits() == old(this).nbits()
+    //         ensures this.I() == S.bitmask_or(old(this.I()), other.I())
 
-        method xor(other: BitmaskCode<T>)
-            requires this.Inv() && other.Inv()
-            requires this.nbits() == other.nbits()
-            requires this.ghost_data != other.ghost_data
-            modifies this.ghost_data
-            ensures this.Inv()
-            ensures unchanged(other) && unchanged(other.ghost_data)
-            ensures this.nbits() == old(this).nbits()
-            ensures this.I() == S.bitmask_xor(old(this.I()), other.I())
+    //     method xor(other: BitmaskCode<T>)
+    //         requires this.Inv() && other.Inv()
+    //         requires this.nbits() == other.nbits()
+    //         requires this.ghost_data != other.ghost_data
+    //         modifies this.ghost_data
+    //         ensures this.Inv()
+    //         ensures unchanged(other) && unchanged(other.ghost_data)
+    //         ensures this.nbits() == old(this).nbits()
+    //         ensures this.I() == S.bitmask_xor(old(this.I()), other.I())
 
-        method not()
-            requires this.Inv()
-            modifies this.ghost_data
-            ensures this.Inv()
-            ensures this.nbits() == old(this).nbits()
-            ensures this.I() == S.bitmask_not(old(this.I()))
-    }
+    //     method not()
+    //         requires this.Inv()
+    //         modifies this.ghost_data
+    //         ensures this.Inv()
+    //         ensures this.nbits() == old(this).nbits()
+    //         ensures this.I() == S.bitmask_not(old(this.I()))
+    // }
 }
