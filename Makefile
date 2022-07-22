@@ -21,6 +21,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+# the target language, one of cpp, cs, ...
+TARGET ?= cpp
+
 
 BITFIELDS_SPEC =
 BITFIELDS += src/BitFields/BitFields.i.dfy
@@ -42,8 +45,8 @@ DFY_COMPILE = $(BITMASK) $(BITFIELDS)
 verify: $(patsubst src/%.dfy,build/verify/%.log,$(DFY_VERIFY))
 	@echo "Verified..."
 
-# generate the cpp code
-generate: $(patsubst src/%.dfy,build/generated/%.cpp,$(DFY_COMPILE))
+# generate the target language code
+generate: $(patsubst src/%.dfy,build/generated/%.$(TARGET),$(DFY_COMPILE))
 	@echo "Generated"
 
 
@@ -53,7 +56,7 @@ build/verify/%.i.log : src/%.i.dfy
 	VERBOSE=1 bash tools/dafny-verify-all.sh $< > $@
 
 # Rule to generate the CPP file from the dafny file
-build/generated/%.i.cpp : src/%.i.dfy build/verify/%.i.log
+build/generated/%.i.$(TARGET) : src/%.i.dfy build/verify/%.i.log
 	@mkdir -p $(@D)
 	bash tools/dafny-compile.sh $< $@
 

@@ -2,13 +2,16 @@
 
 This repository contains verified bitmask implementations in Dafny.
 
+
 ## LICENSE
 
 see LICENSE file.
 
+
 ## Authors
 
 Reto Achermann
+
 
 ## Dependencies
 
@@ -22,10 +25,27 @@ The script will install Dafny in the `.dafny` directory of this repository.
 
 Alternatively, you can also use the Visual Studio Code extension.
 
+
 ## Building and Verifying
 
- - TODO: how to run the full verification, and build it. (Makefile)
+To verify the BitMask and BitField modules execute the following command
 
+```
+$ make verify
+```
+
+Generating the code to be used in the library, execute the following command:
+
+```
+$ make generate
+```
+
+This generates `C++` code by default, you can change the language by setting
+the `TARGET` environment variable.
+
+```
+$ TARGET=cs make generate
+```
 
 ## Development
 
