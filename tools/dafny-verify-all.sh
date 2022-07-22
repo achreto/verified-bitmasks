@@ -34,6 +34,7 @@ ROOT=$(git rev-parse --show-toplevel)
 DAFNY_DIR=${ROOT}/.dafny
 DAFNY=${DAFNY_DIR}/dafny/dafny
 CPUS=$(nproc)
+VERBOSE=${VERBOSE:-0}
 TIMELIMIT=20
 
 if [ ! -f ${DAFNY} ]; then
@@ -41,5 +42,10 @@ if [ ! -f ${DAFNY} ]; then
     exit 1
 fi
 
+TRACE=
+if [ "$VERBOSE" -eq 1 ]; then
+    TRACE="/trace"
+fi
+
 # /induction:1 /noNLarith
-${DAFNY} "$@"  /compile:0 /noCheating:1 /verifyAllModules /separateModuleOutput /vcsCores:${CPUS} /timeLimit:${TIMELIMIT}
+${DAFNY}  /compile:0 /noCheating:1 /verifyAllModules /separateModuleOutput /vcsCores:${CPUS} /timeLimit:${TIMELIMIT} ${TRACE} "$@"

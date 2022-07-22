@@ -1,5 +1,3 @@
-#! /bin/bash
-
 #
 # MIT License
 #
@@ -22,40 +20,42 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#
-# SPDX-License-Identifier: MIT
-#
-
-#
-# Compiles a single Dafny file into executable code.
-#
-# Environment Arguments:
-# - TARGET: the target language to generate code for.
-#
 
 
-ROOT=$(git rev-parse --show-toplevel)
-DAFNY_DIR=${ROOT}/.dafny
-DAFNY=${DAFNY_DIR}/dafny/dafny
-BUILD=${ROOT}/build
-CPUS=$(nproc)
-VERBOSE=${VERBOSE:-0}
-TIMELIMIT=20
+BITFIELDS_SPEC =
+BITFIELDS += src/BitFields/BitFields.i.dfy
+BITFIELDS += src/BitFields/MachineWords.i.dfy
 
-if [ ! -f ${DAFNY} ]; then
-    echo "dafny not found, please run bash tools/install-dafny.sh first"
-    exit 1
-fi
+BITFIELDSLOGS=$(patsubst %.dfy,target/logs/%.log,$(BITFIELDS))
 
-TRACE=
-if [ "$VERBOSE" -eq 1 ]; then
-    TRACE="/trace"
-fi
 
-# can also be py, cs, java
-LANG=${TARGET:-cpp}
-echo "compiling target language: ${LANG}"
-echo "output directory: ${BUILD}"
+BITMASK_SPEC =
+BITMASK += src/BitMask/BitmaskArray.i.dfy
+BITMASK += src/BitMask/BitmaskSeq.i.dfy
 
-# /induction:1 /noNLarith
-${DAFNY} /noCheating:1 /dafnyVerify:1 /spillTargetCode:3  /compile:0 /vcsCores:${CPUS}  /compileTarget:${LANG} /optimize ${TRACE} /out:"$2" "$1"
+BITMASK_LOGS=$(patsubst %.dfy,build/verify/%.log,$(BITMASK))
+
+DFY_VERIFY  = $(BITFIELDS) $(BITFIELDS_SPEC) $(BITMASK) $(BITMASK_SPEC)
+DFY_COMPILE = $(BITMASK)
+
+# verify the files
+verify: $(patsubst src/%.dfy,build/verify/%.log,$(DFY_VERIFY))
+	@echo "Verified..."
+
+# generate the cpp code
+generate: $(patsubst src/%.dfy,build/generated/%.cpp,$(DFY_COMPILE))
+	@echo "Generated"
+
+
+# Rule to verify a dafny file
+build/verify/%.i.log : src/%.i.dfy
+	@mkdir -p $(@D)
+	VERBOSE=1 bash tools/dafny-verify-all.sh $< > $@
+
+# Rule to generate the CPP file from the dafny file
+build/generated/%.i.cpp : src/%.i.dfy build/verify/%.i.log
+	@mkdir -p $(@D)
+	bash tools/dafny-compile.sh $< $@
+
+clean :
+	rm -rf build
