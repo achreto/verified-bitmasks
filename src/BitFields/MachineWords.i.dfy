@@ -6,42 +6,42 @@ module MachineWords {
     import opened MachineTypes
     import B = BitFields
 
-    function method IntToUInt64(a: int) : uint64
+    function IntToUInt64(a: int) : uint64
         requires 0 <= a < UINT64_MAX()
     {
         a as uint64
     }
 
-    function method IntToUInt32(a: int) : uint32
+    function IntToUInt32(a: int) : uint32
         requires 0 <= a < UINT32_MAX()
     {
         a as uint32
     }
 
 
-    function method IntToUInt16(a: int) : uint16
+    function IntToUInt16(a: int) : uint16
         requires 0 <= a < UINT16_MAX()
     {
         a as uint16
     }
 
-    function method IntToUInt8(a: int) : uint8
+    function IntToUInt8(a: int) : uint8
         requires 0 <= a < UINT8_MAX()
     {
         a as uint8
     }
 
-    function method UInt64ToInt(a: uint64) : int { a as int}
-    function method UInt64ToNat(a: uint64) : int { a as nat}
+    function UInt64ToInt(a: uint64) : int { a as int}
+    function UInt64ToNat(a: uint64) : int { a as nat}
 
-    function method UInt32ToInt(a: uint32) : int { a as int}
-    function method UInt32ToNat(a: uint32) : int { a as nat}
+    function UInt32ToInt(a: uint32) : int { a as int}
+    function UInt32ToNat(a: uint32) : int { a as nat}
 
-    function method UInt16ToInt(a: uint16) : int { a as int}
-    function method UInt16ToNat(a: uint16) : int { a as nat}
+    function UInt16ToInt(a: uint16) : int { a as int}
+    function UInt16ToNat(a: uint16) : int { a as nat}
 
-    function method UInt8ToInt(a: uint8) : int { a as int}
-    function method UInt8ToNat(a: uint8) : int { a as nat}
+    function UInt8ToInt(a: uint8) : int { a as int}
+    function UInt8ToNat(a: uint8) : int { a as nat}
 
 
     ///////////////////////////////////////////////////////////////////////////////////////////////

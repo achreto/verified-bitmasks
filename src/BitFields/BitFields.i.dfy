@@ -42,7 +42,7 @@ module BitFields {
     const WORD_SIZE : I := 64
 
     /// the value representing all ones in the bitvector
-    const ALL_ONES : nat := 0xffff_ffff_ffff_ffff
+    const ALL_ONES : uint64 := 0xffff_ffff_ffff_ffff
 
     /// represents the integer type (64-bit unsigned integer)
     type I = uint64
