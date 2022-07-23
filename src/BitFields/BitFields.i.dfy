@@ -518,7 +518,7 @@ module BitFields {
     }
 
     // two bits are not equal
-    lemma lemma_BitNotEqual(i: I, j: I)
+    lemma lemma_BitNotEqualAndZero(i: I, j: I)
         requires i != j
         requires i < WORD_SIZE
         requires j < WORD_SIZE
@@ -527,7 +527,7 @@ module BitFields {
         reveal_Bit(); reveal_BitAnd();
     }
 
-    lemma lemma_OnesBitIsSet(i: I)
+    lemma lemma_BitOnesBitIsSet(i: I)
         requires i < WORD_SIZE
         ensures BitIsSet(BitOnes(), i)
     {
@@ -535,7 +535,7 @@ module BitFields {
         lemma_BitAndOnes(Bit(i));
     }
 
-    lemma lemma_ZerosNotBitIsSet(i: I)
+    lemma lemma_BitZerosNotBitIsSet(i: I)
         requires i < WORD_SIZE
         ensures !BitIsSet(BitZeros(), i)
     {
@@ -563,7 +563,7 @@ module BitFields {
     {
         reveal_BitIsSet(); reveal_BitSetBit();
         lemma_BitAndOrDist(a, Bit(i), Bit(j));
-        lemma_BitNotEqual(i, j);
+        lemma_BitNotEqualAndZero(i, j);
         lemma_BitOrZero(BitAnd(a, Bit(j)));
     }
 

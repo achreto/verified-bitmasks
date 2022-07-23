@@ -545,4 +545,127 @@ module MachineWords {
         B.lemma_BitXorIsNotEq(bv_a, bv_b, i);
     }
 
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    // Lemmas and Equalities: Not and Comp
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+
+    lemma lemma_BitwiseNotCompEq(a: uint64)
+        ensures BitwiseNot(a) == BitwiseComp(a);
+    {
+        var bv_a := B.WordToBits(a);
+
+        reveal_BitwiseNot(); reveal_BitwiseComp();
+        B.BitNotCompEq(bv_a);
+    }
+
+    lemma lemma_BitwiseNotNot(a: uint64)
+        ensures BitwiseNot(BitwiseNot(a)) == a;
+    {
+        var bv_a := B.WordToBits(a);
+
+        reveal_BitwiseNot();
+        B.lemma_BitsToWordWordToBits(B.BitNot(bv_a));
+        B.lemma_BitNotNot(bv_a);
+        B.lemma_BitsToWordWordToBits(bv_a);
+        B.lemma_WordToBitsBitsToWord(a);
+    }
+
+    lemma lemma_BitwiseCompComp(a: uint64)
+        ensures BitwiseComp(BitwiseComp(a)) == a;
+    {
+        lemma_BitwiseNotCompEq(a);
+        lemma_BitwiseNotCompEq(BitwiseNot(a));
+        lemma_BitwiseNotNot(a);
+    }
+
+    lemma lemma_BitwiseNotIsNot(a: uint64, i: uint64)
+        requires i < B.WORD_SIZE
+        ensures BitwiseGetBit(BitwiseNot(a), i) == !BitwiseGetBit(a, i)
+    {
+        var bv_a := B.WordToBits(a);
+
+        reveal_BitwiseGetBit(); reveal_BitwiseNot();
+        B.lemma_BitNotIsNot(bv_a, i);
+        B.lemma_BitsToWordWordToBits(B.BitNot(bv_a));
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    // Shifts
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+
+    // TODO
+
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    // Constructors
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    lemma lemma_BitwiseBitNotZero(i: uint64)
+        requires i < B.WORD_SIZE
+        ensures BitwiseBit(i) != 0
+    {
+        reveal_BitwiseBit();
+        B.reveal_BitsToWord();
+        B.lemma_BitNotZero(i);
+    }
+
+    lemma lemma_BitBitIsSet(i: uint64)
+        requires i < B.WORD_SIZE
+        ensures BitwiseGetBit(BitwiseBit(i), i)
+    {
+        reveal_BitwiseGetBit();
+        reveal_BitwiseBit();
+        B.lemma_BitsToWordWordToBits(B.Bit(i));
+        B.lemma_BitBitIsSet(i);
+    }
+
+    lemma lemma_BitNotSetBits(i: uint64, j: uint64)
+        requires i < B.WORD_SIZE
+        requires j < B.WORD_SIZE
+        requires i != j
+        ensures !BitwiseGetBit(BitwiseBit(i), j)
+    {
+        reveal_BitwiseGetBit();
+        reveal_BitwiseBit();
+        B.lemma_BitsToWordWordToBits(B.Bit(i));
+        B.lemma_BitNotSetBits(i, j);
+    }
+
+
+    lemma lemma_BitwiseNotEqualAndZero(i: uint64, j: uint64)
+        requires i != j
+        requires i < B.WORD_SIZE
+        requires j < B.WORD_SIZE
+        ensures BitwiseAnd(BitwiseBit(i), BitwiseBit(j)) == 0
+    {
+        reveal_BitwiseBit(); reveal_BitwiseAnd();
+        B.lemma_BitNotEqualAndZero(i, j);
+        B.reveal_BitsToWord();
+        B.lemma_BitsToWordWordToBits(B.Bit(i));
+        B.lemma_BitsToWordWordToBits(B.Bit(j));
+    }
+
+    lemma lemma_BitwiseOnesBitIsSet(i: uint64)
+        requires i < B.WORD_SIZE
+        ensures BitwiseGetBit(BitwiseOnes(), i)
+    {
+        assert (B.WordToBits(BitwiseOnes()) == B.BitOnes()) by  {
+            B.reveal_WordToBits(); B.reveal_BitOnes();
+        }
+        reveal_BitwiseGetBit();
+        B.lemma_BitOnesBitIsSet(i);
+    }
+
+    lemma lemma_BitwiseZerosNotBitIsSet(i: uint64   )
+        requires i < B.WORD_SIZE
+        ensures !BitwiseGetBit(BitwiseZeros(), i)
+    {
+        assert (B.WordToBits(BitwiseZeros()) == B.BitZeros()) by  {
+            B.reveal_WordToBits(); B.reveal_BitZeros();
+        }
+        reveal_BitwiseGetBit();
+        B.lemma_BitZerosNotBitIsSet(i);
+    }
 }
