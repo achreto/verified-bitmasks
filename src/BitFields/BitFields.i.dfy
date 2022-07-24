@@ -556,8 +556,8 @@ module BitFields {
     }
 
     lemma lemma_BitSetOther(a: BV, i: I, j: I)
-        requires i < 64
-        requires j < 64
+        requires i < WORD_SIZE
+        requires j < WORD_SIZE
         requires i != j
         ensures BitIsSet(a, j) <==> BitIsSet(BitSetBit(a, i), j)
     {
@@ -574,8 +574,8 @@ module BitFields {
     }
 
     lemma lemma_BitClearOther(a: BV, i: I, j: I)
-        requires i < 64
-        requires j < 64
+        requires i < WORD_SIZE
+        requires j < WORD_SIZE
         requires i != j
         ensures BitIsSet(a, j) <==> BitIsSet(BitClearBit(a, i), j)
     {
@@ -611,13 +611,13 @@ module BitFields {
     // DeMorgan's Laws
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
-    lemma lemma_BitDeMorgan(a: BV, b: BV)
+    lemma lemma_BitDeMorgan_NotOr(a: BV, b: BV)
         ensures BitNot(BitOr(a, b)) == BitAnd(BitNot(a), BitNot(b))
     {
         reveal_BitAnd(); reveal_BitNot(); reveal_BitOr();
     }
 
-    lemma lemma_BitDeMorgan2(a: BV, b: BV)
+    lemma lemma_BitDeMorgan_NotAnd(a: BV, b: BV)
         ensures BitNot(BitAnd(a, b)) == BitOr(BitNot(a), BitNot(b))
     {
         reveal_BitAnd(); reveal_BitNot(); reveal_BitOr();
@@ -630,8 +630,8 @@ module BitFields {
 
     lemma lemma_BitCompNotEqual(i: I, j: I)
         requires i != j
-        requires i < 64
-        requires j < 64
+        requires i < WORD_SIZE
+        requires j < WORD_SIZE
         ensures BitAnd(BitComp(Bit(i)), Bit(j)) == Bit(j)
     {
         reveal_Bit(); reveal_BitAnd(); reveal_BitAnd(); reveal_BitComp();
