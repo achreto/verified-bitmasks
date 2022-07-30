@@ -180,8 +180,11 @@ module BitFields {
 
     lemma lemma_BitsToSeqToBits(b: BV)
         ensures SeqBoolToBits(BitsToSeqBool(b)) == b
-    // TODO: proof.
-
+    {
+        var b' := SeqBoolToBits(BitsToSeqBool(b));
+        assert forall i | InRange(i, WORD_SIZE) :: (BitIsSet(b', i as I) == BitIsSet(b, i as I));
+        lemma_BitEq(b, b');
+    }
 
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -899,4 +902,5 @@ module BitFields {
     {
         reveal_Bit(); reveal_BitAnd(); reveal_BitAnd(); reveal_BitComp();
     }
+
 }
