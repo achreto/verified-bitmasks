@@ -89,6 +89,102 @@ module BitFields {
 
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
+    // Helper Functions
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+
+    /// a predicate for the inrange condition of the bits
+    /// intended to be used in foralls.
+    predicate InRange(i: I, n: I) {
+        0 <= i && i < n
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    // From/To Seq<bool>
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+
+    function {:opaque} BitsToSeqBool(b: BV) : (r: seq<bool>)
+        ensures |r| == WORD_SIZE as nat
+        ensures forall i | InRange(i, WORD_SIZE) :: r[i] == BitIsSet(b, i)
+    {
+        seq(WORD_SIZE, i requires 0 <= i < WORD_SIZE as nat => BitIsSet(b, i as I))
+    }
+
+    function {:opaque} SeqBoolToBitsHelper(s: seq<bool>, idx: nat) : (r: BV)
+        requires idx <= |s|
+        requires |s| == WORD_SIZE as nat
+        ensures forall i | idx <= i < |s| :: s[i] == BitIsSet(r, i as I)
+        //ensures forall i | 0 <= i < idx && Dummy():: !BitIsSet(r, i as I)
+        decreases |s| - idx
+    {
+        if |s| == idx then
+            var r := 0;
+            assert forall i | idx <= i < |s| :: s[i] == BitIsSet(r, i as I);
+            r
+        else
+            var r := SeqBoolToBitsHelper(s, idx + 1);
+            assert forall i | (idx + 1) <= i < |s| :: s[i] == BitIsSet(r, i as I);
+            // assert forall i | 0 <= i < AddOne(idx) && Dummy() :: !BitIsSet(r, i as I);
+            var res := if s[idx] then BitSetBit(r, idx as I) else BitClearBit(r, idx as I);
+            // assume forall i | 0 <= i < idx && Dummy() :: !BitIsSet(res, i as I);
+            assert forall i | idx <= i < |s| :: s[i] == BitIsSet(res, i as I) by {
+
+                assert forall i | (idx + 1) <= i < |s| :: s[i] == BitIsSet(r, i as I);
+                forall i | (idx + 1) <= i < |s|
+                ensures BitIsSet(res, i as I) == BitIsSet(r, i as I) {
+                    if s[idx] {
+                        lemma_BitSetNotChangeOthers(r, idx as I);
+                        lemma_BitClearNotChangeOthers(r, idx as I);
+                    } else {
+                        lemma_BitSetNotChangeOthers(r, idx as I);
+                        lemma_BitClearNotChangeOthers(r, idx as I);
+                    }
+                    reveal_BitClearBit(); reveal_BitComp();
+                    reveal_BitSetBit(); reveal_BitIsSet();
+                    reveal_BitAnd(); reveal_BitOr();
+                    reveal_Bit();
+                }
+
+                forall i |  (idx + 1) <= i < |s|
+                ensures s[i] == BitIsSet(res, i as I) {
+                    assert i != idx;
+                    if s[idx] {
+                        lemma_BitSetNotChangeOthers(r, idx as I);
+                        lemma_BitClearNotChangeOthers(r, idx as I);
+                    } else {
+                        lemma_BitSetNotChangeOthers(r, idx as I);
+                        lemma_BitClearNotChangeOthers(r, idx as I);
+                    }
+                    reveal_BitClearBit(); reveal_BitComp();
+                    reveal_BitSetBit(); reveal_BitIsSet();
+                    reveal_BitAnd(); reveal_BitOr();
+                    reveal_Bit();
+                    assert BitIsSet(r, i as I) == BitIsSet(res, i as I);
+                }
+            }
+            res
+    }
+
+    function {:opaque} SeqBoolToBits(b: seq<bool>) : (r: BV)
+        requires |b| == WORD_SIZE as nat
+        ensures forall i | InRange(i, |b| as I) :: b[i] == BitIsSet(r, i as I)
+    {
+        SeqBoolToBitsHelper(b, 0)
+    }
+
+
+    lemma lemma_SeqToBitsToSeq(b: seq<bool>)
+        requires |b| == WORD_SIZE as nat
+        ensures BitsToSeqBool(SeqBoolToBits(b)) == b
+    {
+    }
+
+    lemma lemma_BitsToSeqToBits(b: BV)
+        ensures SeqBoolToBits(BitsToSeqBool(b)) == b
+    // TODO: proof.
+
+
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
     // Constructor Functions
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -100,14 +196,22 @@ module BitFields {
         (1 as BV) << (i as bv7)
     }
 
+    /// constructs a new bitvector where all its bits are set
     function method {:opaque} BitOnes() : BV {
          0xffff_ffff_ffff_ffff as BV
     }
 
+    /// constructs a new bitvector where none of its bits are set
     function method {:opaque} BitZeros() : BV {
         0x0 as BV
     }
 
+    /// constructs a new bitvector where the first `i` bits are set
+    function method {:opaque} BitMask(i: I) : BV
+        requires i <= WORD_SIZE
+    {
+        ((1 as BV) << (i as bv7)) - 1
+    }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     // Bitwise Operations
@@ -118,6 +222,7 @@ module BitFields {
     predicate method {:opaque} BitIsSet(x:BV, i: I)
         requires i < WORD_SIZE
     {
+        // TODO: should we replace this by `BitAnd(x, Bit(i)) == Bit(i)` or BitAnd(x, Bit(i)) != BitZeros()`
         BitAnd(x, Bit(i)) != 0
     }
 
@@ -126,7 +231,7 @@ module BitFields {
         ensures BitIsSet(r, i)
     {
         reveal_BitIsSet(); reveal_BitAnd(); reveal_BitOr();
-        lemma_BitNotZero(i);
+        lemma_BitNotZero(i); reveal_BitZeros();
 
         BitOr(x, Bit(i))
     }
@@ -247,9 +352,9 @@ module BitFields {
 
     /// Zeroing: a & 0 == 0
     lemma lemma_BitAndZero(a: BV)
-        ensures BitAnd(a, 0) == 0;
+        ensures BitAnd(a, BitZeros()) == BitZeros();
     {
-        reveal_BitAnd();
+        reveal_BitAnd(); reveal_BitZeros();
     }
 
     /// identity: a & Ones == a
@@ -257,6 +362,13 @@ module BitFields {
         ensures BitAnd(a, BitOnes()) == a;
     {
         reveal_BitAnd(); reveal_BitOnes();
+    }
+
+    lemma lemma_BitAndOnesEq(a: BV, b: BV)
+        ensures (a == b) <==> (BitAnd(a, BitOnes()) == BitAnd(b, BitOnes()))
+    {
+        reveal_BitAnd();
+        reveal_BitOnes();
     }
 
     /// commutativity law: a & b == b & a
@@ -281,9 +393,9 @@ module BitFields {
     }
 
     lemma lemma_BitAndCompSelf(a: BV)
-        ensures BitAnd(BitComp(a), a) == 0
+        ensures BitAnd(BitComp(a), a) == BitZeros();
     {
-        reveal_BitAnd(); reveal_BitComp();
+        reveal_BitAnd(); reveal_BitComp(); reveal_BitZeros();
     }
 
     lemma lemma_BitAndNotSelf(a: BV)
@@ -294,9 +406,10 @@ module BitFields {
 
     lemma lemma_BitAndBitDist(a: BV, b: BV, i: I)
         requires i < WORD_SIZE
-        ensures (BitAnd(BitAnd(a, Bit(i)), BitAnd(b, Bit(i))) == 0)  ==  ((BitAnd(a, Bit(i)) == 0) || (BitAnd(b, Bit(i)) == 0))
+        ensures (BitAnd(BitAnd(a, Bit(i)), BitAnd(b, Bit(i))) == BitZeros())
+                  ==  ((BitAnd(a, Bit(i)) == BitZeros()) || (BitAnd(b, Bit(i)) == BitZeros()))
     {
-        reveal_BitAnd(); reveal_Bit();
+        reveal_BitAnd(); reveal_Bit(); reveal_BitZeros();
     }
 
     // result is the intersection (a & b)[i] == a[i] && b[i]
@@ -309,10 +422,11 @@ module BitFields {
             reveal_BitAnd();
             assert (BitIsSet(a, i) && BitIsSet(b, i));
         } else {
-            assert BitAnd(BitAnd(a, Bit(i)), BitAnd(b, Bit(i))) == 0 by {
+            reveal_BitZeros();
+            assert BitAnd(BitAnd(a, Bit(i)), BitAnd(b, Bit(i))) == BitZeros() by {
                 lemma_BitAndDist(a, b, Bit(i));
             }
-            assert (BitAnd(a, Bit(i)) == 0) || (BitAnd(b, Bit(i)) == 0) by {
+            assert (BitAnd(a, Bit(i)) == BitZeros()) || (BitAnd(b, Bit(i)) == BitZeros()) by {
                 lemma_BitAndBitDist(a, b, i);
             }
             assert !((BitIsSet(a, i) && BitIsSet(b, i)));
@@ -324,8 +438,7 @@ module BitFields {
     // Lemmas and Equalities: OR
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
-
-     /// idempotent: a | a == a
+    /// idempotent: a | a == a
     lemma lemma_BitOrSelf(a: BV)
         ensures BitOr(a, a) == a;
     {
@@ -334,9 +447,9 @@ module BitFields {
 
     /// identity: a | 0 == a
     lemma lemma_BitOrZero(a: BV)
-        ensures BitOr(a, 0) == a;
+        ensures BitOr(a, BitZeros()) == a;
     {
-        reveal_BitOr();
+        reveal_BitOr(); reveal_BitZeros();
     }
 
     /// Ones: a | Ones == Ones
@@ -369,10 +482,10 @@ module BitFields {
 
     /// (a | b) == 0 ===> a == 0 && b == 0
     lemma lemma_BitOrZeroImpliesArgs(a: BV, b:BV)
-        requires BitOr(a, b) == 0
-        ensures a == 0 && b == 0
+        requires BitOr(a, b) == BitZeros()
+        ensures a == BitZeros() && b == BitZeros()
     {
-        reveal_BitOr();
+        reveal_BitOr(); reveal_BitZeros();
     }
 
     /// The result of Or-ing two numbers together
@@ -388,6 +501,7 @@ module BitFields {
         }
 
         if !BitIsSet(BitOr(a, b), i) {
+            reveal_BitZeros();
             lemma_BitOrZeroImpliesArgs(BitAnd(a, Bit(i)), BitAnd(b, Bit(i)));
         } else {
             reveal_BitOr();
@@ -401,16 +515,16 @@ module BitFields {
 
      /// Clearing with Self: a ^ a == 0
     lemma lemma_BitXorSelf(a: BV)
-        ensures BitXor(a, a) == 0;
+        ensures BitXor(a, a) == BitZeros();
     {
-        reveal_BitXor();
+        reveal_BitXor(); reveal_BitZeros();
     }
 
     /// identity: a ^ 0 == a
     lemma lemma_BitXorZero(a: BV)
-        ensures BitXor(a, 0) == a;
+        ensures BitXor(a, BitZeros()) == a;
     {
-        reveal_BitXor();
+        reveal_BitXor(); reveal_BitZeros();
     }
 
     /// Ones: a ^ Ones == a
@@ -436,10 +550,10 @@ module BitFields {
 
     /// (a ^ b) == 0 ===> a == b
     lemma lemma_BitXorZeroImpliesArgs(a: BV, b:BV)
-        requires BitXor(a, b) == 0
+        requires BitXor(a, b) == BitZeros()
         ensures a == b
     {
-        reveal_BitXor();
+        reveal_BitXor(); reveal_BitZeros();
     }
 
     /// Xor is the two not equal: (a ^ b)[i] == (a[i] != b[i])
@@ -481,6 +595,13 @@ module BitFields {
         reveal_BitIsSet(); reveal_BitNot(); reveal_BitAnd(); reveal_Bit();
     }
 
+    lemma lemma_BitNotOnes()
+        ensures BitNot(BitOnes()) == BitZeros();
+        ensures BitNot(BitZeros()) == BitOnes();
+    {
+        reveal_BitNot(); reveal_BitZeros(); reveal_BitOnes();
+    }
+
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     // Shifts
@@ -496,9 +617,9 @@ module BitFields {
 
     lemma lemma_BitNotZero(i: I)
         requires i < WORD_SIZE
-        ensures Bit(i) != 0
+        ensures Bit(i) != BitZeros()
     {
-        reveal_Bit();
+        reveal_Bit(); reveal_BitZeros();
     }
 
     lemma lemma_BitBitIsSet(i: I)
@@ -522,9 +643,9 @@ module BitFields {
         requires i != j
         requires i < WORD_SIZE
         requires j < WORD_SIZE
-        ensures BitAnd(Bit(i), Bit(j)) == 0
+        ensures BitAnd(Bit(i), Bit(j)) == BitZeros();
     {
-        reveal_Bit(); reveal_BitAnd();
+        reveal_Bit(); reveal_BitAnd(); reveal_BitZeros();
     }
 
     lemma lemma_BitOnesBitIsSet(i: I)
@@ -543,11 +664,118 @@ module BitFields {
         lemma_BitAndZero(Bit(i));
     }
 
+    lemma lemma_BitMaskIsOnes()
+        ensures BitMask(64) == BitOnes()
+    {
+        reveal_BitMask(); reveal_BitOnes();
+    }
+
+    lemma lemma_BitMaskIsZeros()
+        ensures BitMask(0) == BitZeros()
+    {
+        reveal_BitMask(); reveal_BitZeros();
+    }
+
+    lemma lemma_BitMaskExtendBitOr(i: I)
+        requires i < WORD_SIZE
+        ensures BitMask(i+1) == BitOr(BitMask(i), Bit(i))
+    {
+        reveal_BitMask(); reveal_BitOr(); reveal_Bit();
+    }
+
+    lemma lemma_BitMaskExtendBitOrLess(i: I)
+        requires 0 < i <= WORD_SIZE
+        ensures BitMask(i) == BitOr(BitMask(i-1), Bit(i-1))
+    {
+        reveal_BitMask(); reveal_BitOr(); reveal_Bit();
+    }
+
+    lemma lemma_BitMaskExtendBitSet(i: I)
+        requires i < WORD_SIZE
+        ensures BitMask(i+1) == BitSetBit(BitMask(i), i)
+    {
+        reveal_BitSetBit();
+        lemma_BitMaskExtendBitOr(i);
+    }
+
+    lemma lemma_BitMaskExtendBitSetLess(i: I)
+        requires 0 < i <= WORD_SIZE
+        ensures BitMask(i) == BitSetBit(BitMask(i-1), i-1)
+    {
+        reveal_BitSetBit();
+        reveal_BitMask(); reveal_BitOr(); reveal_Bit();
+    }
+
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     // Setting Individual Bits
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
+
+    lemma lemma_BitIsSetPrefix(a: BV, b: BV, i: I, i': I)
+        requires 0 < i <= WORD_SIZE
+        requires i' <= i
+        requires (forall j | InRange(j, i) :: (BitIsSet(a, j) == BitIsSet(b, j)))
+        ensures  (forall j | InRange(j, i') :: (BitIsSet(a, j) == BitIsSet(b, j)))
+    {
+        forall j | InRange(j, i') ensures
+            (BitIsSet(a, j) == BitIsSet(b, j))
+        {
+            assert InRange(j, i);
+        }
+    }
+
+    lemma lemma_AllBitsEqualBVEq_Induct(a: BV, b: BV, i: I)
+        requires 0 <= i <= WORD_SIZE
+        requires (forall j | InRange(j, i) :: (BitIsSet(a, j) == BitIsSet(b, j)))
+        ensures BitAnd(a, BitMask(i)) == BitAnd(b, BitMask(i))
+    {
+        if i == 0 {
+            lemma_BitMaskIsZeros();
+            lemma_BitAndZero(a);
+            lemma_BitAndZero(b);
+        } else {
+            lemma_BitIsSetPrefix(a, b, i, i - 1);
+            lemma_AllBitsEqualBVEq_Induct(a, b, i- 1);
+            lemma_BitAndComm(a, BitMask(i-1));
+            lemma_BitAndComm(b, BitMask(i-1));
+
+            assert InRange(i - 1, i);
+            assert BitAnd(Bit(i-1), a) == BitAnd(Bit(i-1), b) by {
+                reveal_BitIsSet();
+                assert (BitAnd(a, Bit(i - 1))) == (BitAnd(b, Bit(i - 1))) by {
+                    reveal_BitAnd(); reveal_Bit();
+                }
+                lemma_BitAndComm(a, Bit(i-1));
+                lemma_BitAndComm(b, Bit(i-1));
+            }
+
+            lemma_BitAndOrDist(BitMask(i-1), Bit(i-1), a);
+            lemma_BitAndOrDist(BitMask(i-1), Bit(i-1), b);
+            lemma_BitAndComm(a, BitOr(BitMask(i-1), Bit(i-1)));
+            lemma_BitAndComm(b, BitOr(BitMask(i-1), Bit(i-1)));
+            lemma_BitMaskExtendBitOrLess(i);
+        }
+    }
+
+    lemma lemma_AllBitsEqualBVEq(a: BV, b: BV)
+        requires (forall j | InRange(j, WORD_SIZE) :: (BitIsSet(a, j) == BitIsSet(b, j)))
+        ensures a == b
+    {
+        lemma_AllBitsEqualBVEq_Induct(a, b, 64);
+        lemma_BitMaskIsOnes();
+        lemma_BitAndOnes(a);
+        lemma_BitAndOnes(b);
+    }
+
+    lemma lemma_BitEq(a: BV, b: BV)
+        ensures (a == b) == (forall i |  InRange(i, WORD_SIZE):: (BitIsSet(a, i) == BitIsSet(b, i)))
+    {
+        if (forall i |  InRange(i, WORD_SIZE):: (BitIsSet(a, i) == BitIsSet(b, i))) {
+            lemma_AllBitsEqualBVEq(a, b);
+        } else {
+        }
+    }
 
     lemma lemma_BitSetSelf(a: BV, i: I)
         requires i < WORD_SIZE
@@ -582,6 +810,41 @@ module BitFields {
         reveal_BitIsSet(); reveal_BitClearBit();
         lemma_BitAndAssoc(a, BitComp(Bit(i)), Bit(j));
         lemma_BitCompNotEqual(i, j);
+    }
+
+    lemma lemma_BitSetNotChangeOthers(a: BV, i: I)
+        requires i < WORD_SIZE
+        ensures forall j | InRange(j, WORD_SIZE) && i != j :: BitIsSet(a, j) == BitIsSet(BitSetBit(a, i), j)
+    {
+        reveal_BitSetBit();
+        reveal_BitIsSet();
+        reveal_BitAnd();
+        reveal_BitOr();
+        reveal_Bit();
+    }
+
+    lemma lemma_BitClearNotChangeOthers(a: BV, i: I)
+        requires i < WORD_SIZE
+        ensures forall j | InRange(j, WORD_SIZE) && i != j :: BitIsSet(a, j) == BitIsSet(BitClearBit(a, i), j)
+    {
+        reveal_BitClearBit();
+        reveal_BitIsSet();
+        reveal_BitAnd();
+        reveal_BitOr();
+        reveal_Bit();
+        reveal_BitComp();
+    }
+
+    lemma lemma_BitToggleNotChangeOthers(a: BV, i: I)
+        requires i < WORD_SIZE
+        ensures forall j | InRange(j, WORD_SIZE) && i != j :: BitIsSet(a, j) == BitIsSet(BitToggleBit(a, i), j)
+    {
+        reveal_BitToggleBit();
+        if BitIsSet(a, i) {
+            lemma_BitClearNotChangeOthers(a, i);
+        } else {
+            lemma_BitSetNotChangeOthers(a, i);
+        }
     }
 
 
