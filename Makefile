@@ -47,7 +47,7 @@ verify: $(patsubst src/%.dfy,build/verify/%.log,$(DFY_VERIFY))
 
 # generate the target language code
 generate: $(patsubst src/%.dfy,build/generated/%.$(TARGET),$(DFY_COMPILE))
-	@echo "Generated"
+	@echo "Generated."
 
 
 # Rule to verify a dafny file

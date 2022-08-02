@@ -87,7 +87,6 @@ module BitFields {
         reveal_BitsToWord(); reveal_WordToBits();
     }
 
-
     ///////////////////////////////////////////////////////////////////////////////////////////////
     // Helper Functions
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -370,8 +369,7 @@ module BitFields {
     lemma lemma_BitAndOnesEq(a: BV, b: BV)
         ensures (a == b) <==> (BitAnd(a, BitOnes()) == BitAnd(b, BitOnes()))
     {
-        reveal_BitAnd();
-        reveal_BitOnes();
+        lemma_BitAndOnes(a); lemma_BitAndOnes(b);
     }
 
     /// commutativity law: a & b == b & a
@@ -402,9 +400,9 @@ module BitFields {
     }
 
     lemma lemma_BitAndNotSelf(a: BV)
-        ensures BitAnd(BitNot(a), a) == 0
+        ensures BitAnd(BitNot(a), a) == BitZeros();
     {
-        reveal_BitAnd(); reveal_BitNot();
+        reveal_BitAnd(); reveal_BitNot();  reveal_BitZeros();
     }
 
     lemma lemma_BitAndBitDist(a: BV, b: BV, i: I)
