@@ -133,12 +133,12 @@ module BitmaskSeq refines BitmaskCodeIF {
         // Bitwise Get/Set Operations
         ////////////////////////////////////////////////////////////////////////////////
 
-        method get_bit(i: uint64) returns (r: bool)
+        function method get_bit(i: uint64) : (r: bool)
             requires this.Inv()
             requires i< this.nbits()
             ensures r == S.bitmask_get_bit(this.I(), i as nat)
         {
-            return this.data[i];
+            this.data[i]
         }
 
         method set_bit(i: uint64)
